@@ -1,10 +1,10 @@
-```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Student Project Tracker</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230071e3'/%3E%3Cpath d='M9 16.5l4.5 4.5L23 11.5' fill='none' stroke='%23fff' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
   <link rel="stylesheet" href="style.css">
   <script src="script.js" defer></script>
 </head>
@@ -48,10 +48,35 @@
 
     <section aria-labelledby="list-title">
       <h2 id="list-title">Your Projects</h2>
+
+      <div class="list-tools" hidden>
+        <div>
+          <label for="search">Search</label>
+          <input type="search" id="search" placeholder="Search by name" autocomplete="off">
+        </div>
+
+        <div>
+          <label for="sort">Sort by</label>
+          <select id="sort">
+            <option value="newest">Newest first</option>
+            <option value="oldest">Oldest first</option>
+            <option value="name">Name A–Z</option>
+            <option value="status">Status</option>
+          </select>
+        </div>
+      </div>
+
+      <div id="filters" class="filters" role="group" aria-label="Filter by status" hidden>
+        <button type="button" data-filter="All" aria-pressed="true">All</button>
+        <button type="button" data-filter="Planned" aria-pressed="false">Planned</button>
+        <button type="button" data-filter="In Progress" aria-pressed="false">In Progress</button>
+        <button type="button" data-filter="Completed" aria-pressed="false">Completed</button>
+      </div>
+
+      <p id="list-summary" class="list-summary" aria-live="polite"></p>
       <p id="empty-state">No projects yet.</p>
       <ul id="project-list"></ul>
     </section>
   </main>
 </body>
 </html>
-```

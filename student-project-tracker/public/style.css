@@ -1,156 +1,494 @@
+/* Vaporwave 90s colour and surface tokens */
+:root {
+  /* Light only, so the page and the status menu stay readable on devices set to dark mode. */
+  color-scheme: light;
+
+  --ink: #2b1055;
+  --muted: #5b3a8c;
+  --pink: #ff71ce;
+  --hot-pink: #ff2fa8;
+  --cyan: #01cdfe;
+  --mint: #05ffa1;
+  --purple: #b967ff;
+  --yellow: #fffb96;
+
+  --danger: #b0003a;
+  --success: #0b6b4a;
+
+  --window: #fdf4ff;
+  --field: #fff;
+  --row: #fff8fe;
+  --button: #f0e3ff;
+  --ring: rgba(1, 205, 254, 0.55);
+
+  --planned-bg: #c9f3ff;
+  --planned-text: #00506b;
+  --progress-bg: #fffb96;
+  --progress-text: #6b4a00;
+  --completed-bg: #b8ffe0;
+  --completed-text: #06563a;
+
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
 /* Basic page setup */
 * {
   box-sizing: border-box;
 }
 
 body {
+  min-height: 100vh;
   margin: 0;
-  padding: 24px 16px;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  padding: 48px 16px;
+  font-family: Tahoma, Verdana, "MS Sans Serif", "Segoe UI", sans-serif;
   font-size: 16px;
   line-height: 1.6;
-  color: #1f2937;
-  background-color: #f3f6fa;
+  color: var(--ink);
+  background: linear-gradient(180deg, #ffb3ec 0%, #d9b8ff 45%, #9be7ff 100%) fixed;
+  background-color: #d9b8ff;
+}
+
+/* Neon grid floor */
+body::before {
+  content: "";
+  position: fixed;
+  right: -50%;
+  bottom: 0;
+  left: -50%;
+  z-index: -1;
+  height: 45vh;
+  background-image:
+    linear-gradient(rgba(255, 47, 168, 0.6) 2px, transparent 2px),
+    linear-gradient(90deg, rgba(255, 47, 168, 0.6) 2px, transparent 2px);
+  background-size: 48px 48px;
+  transform: perspective(300px) rotateX(60deg);
+  transform-origin: bottom center;
+  -webkit-mask-image: linear-gradient(transparent, #000 45%);
+  mask-image: linear-gradient(transparent, #000 45%);
+  animation: grid 1.6s linear infinite;
+}
+
+/* Striped sunset sun */
+body::after {
+  content: "";
+  position: fixed;
+  top: 6vh;
+  right: 8vw;
+  z-index: -1;
+  width: min(34vw, 260px);
+  aspect-ratio: 1;
+  background: linear-gradient(180deg, #fffb96 0%, #ff9a5c 55%, #ff2fa8 100%);
+  border-radius: 50%;
+  opacity: 0.85;
+  -webkit-mask-image: linear-gradient(#000 55%, transparent 55% 60%, #000 60% 68%, transparent 68% 74%, #000 74% 81%, transparent 81% 88%, #000 88%);
+  mask-image: linear-gradient(#000 55%, transparent 55% 60%, #000 60% 68%, transparent 68% 74%, #000 74% 81%, transparent 81% 88%, #000 88%);
 }
 
 main {
   width: 100%;
-  max-width: 760px;
+  max-width: 720px;
   margin: 0 auto;
 }
 
 header {
   margin-bottom: 32px;
+  animation: rise 0.7s var(--ease) both;
 }
 
 h1 {
-  margin: 0 0 8px;
-  font-size: 2rem;
-  line-height: 1.25;
-  color: #17365d;
+  margin: 0 0 10px;
+  font-family: "Arial Black", Impact, Haettenschweiler, sans-serif;
+  font-size: 2.6rem;
+  font-style: italic;
+  font-weight: 900;
+  line-height: 1.1;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  text-shadow: 3px 3px 0 var(--cyan), -2px -2px 0 var(--pink);
 }
 
 header p {
+  display: inline-block;
   margin: 0;
-  color: #526174;
+  padding: 2px 10px;
+  font-family: "Lucida Console", "Courier New", monospace;
+  font-size: 0.95rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink);
+  background-color: var(--yellow);
+  border: 2px solid var(--ink);
 }
 
+/* Each section is a 90s desktop window */
 section {
-  margin-bottom: 24px;
-  padding: 24px;
-  background-color: #fff;
-  border: 1px solid #dce3ec;
-  border-radius: 12px;
+  margin-bottom: 28px;
+  padding: 28px;
+  background-color: var(--window);
+  border: 2px solid var(--ink);
+  box-shadow: 6px 6px 0 var(--hot-pink), 12px 12px 0 var(--cyan);
+  animation: rise 0.7s var(--ease) both;
 }
 
+section:nth-of-type(1) {
+  animation-delay: 0.08s;
+}
+
+section:nth-of-type(2) {
+  animation-delay: 0.16s;
+}
+
+/* Window title bar */
 h2 {
-  margin: 0 0 20px;
-  font-size: 1.35rem;
+  margin: -28px -28px 22px;
+  padding: 8px 16px;
+  font-family: "Lucida Console", "Courier New", monospace;
+  font-size: 1.05rem;
+  font-weight: 700;
   line-height: 1.4;
-  color: #17365d;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #fff;
+  text-shadow: 1px 1px 0 var(--ink);
+  background: linear-gradient(90deg, #5b1fb3 0%, #a02cc4 55%, #d6249f 100%);
+  border-bottom: 2px solid var(--ink);
 }
 
 #project-form {
   display: flex;
-  flex-direction: column;
-  gap: 18px;
+  flex-wrap: wrap;
+  gap: 18px 12px;
 }
 
 #project-form div {
   display: flex;
+  flex: 1 1 100%;
   flex-direction: column;
   gap: 6px;
 }
 
 label {
-  font-weight: 600;
-  color: #26364a;
+  font-family: "Lucida Console", "Courier New", monospace;
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
 }
 
+/* Sunken 90s field */
 input,
 select {
   display: block;
   width: 100%;
-  min-height: 44px;
-  padding: 10px 12px;
+  min-height: 46px;
+  padding: 10px 14px;
   font: inherit;
-  color: #1f2937;
-  background-color: #fff;
-  border: 1px solid #b8c4d3;
-  border-radius: 6px;
+  color: var(--ink);
+  background-color: var(--field);
+  border: 2px solid;
+  border-color: var(--ink) #d9b8ff #d9b8ff var(--ink);
+  border-radius: 0;
+  transition: box-shadow 0.2s ease;
 }
 
-button {
-  min-height: 44px;
-  padding: 10px 18px;
-  font: inherit;
-  font-weight: 600;
-  color: #26364a;
-  background-color: #fff;
-  border: 1px solid #b8c4d3;
-  border-radius: 6px;
+select {
+  padding-right: 40px;
+  -webkit-appearance: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M0 0h12L6 8z' fill='%232b1055'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
   cursor: pointer;
 }
 
-#save-button {
-  color: #fff;
-  background-color: #1769aa;
-  border-color: #1769aa;
+/* The opened menu needs solid colours so every option stays readable. */
+option {
+  color: #2b1055;
+  background-color: #fff;
 }
 
-#save-button:hover {
-  background-color: #12558b;
-  border-color: #12558b;
+input::placeholder {
+  color: #7a5fa3;
+}
+
+input:hover,
+select:hover {
+  box-shadow: 0 0 0 2px var(--pink);
+}
+
+input:focus-visible,
+select:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 4px var(--ring), 0 0 0 6px var(--ink);
+}
+
+/* Raised 90s button */
+button {
+  min-height: 44px;
+  padding: 10px 20px;
+  font: inherit;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink);
+  background-color: var(--button);
+  border: 2px solid;
+  border-color: #fff var(--ink) var(--ink) #fff;
+  border-radius: 0;
+  box-shadow: 3px 3px 0 var(--ink);
+  cursor: pointer;
+  transition: transform 0.12s ease, box-shadow 0.12s ease, background-color 0.2s ease, opacity 0.2s ease;
 }
 
 button:hover {
-  background-color: #edf2f7;
+  background-color: var(--yellow);
+}
+
+button:active {
+  border-color: var(--ink) #fff #fff var(--ink);
+  box-shadow: 0 0 0 var(--ink);
+  transform: translate(3px, 3px);
 }
 
 a:focus-visible,
-button:focus-visible,
-input:focus-visible,
-select:focus-visible {
-  outline: 3px solid #f59e0b;
+button:focus-visible {
+  outline: 3px solid var(--ink);
   outline-offset: 3px;
 }
 
-#message {
-  margin: 0 0 24px;
-  color: #17603a;
-  font-weight: 500;
+#save-button {
+  flex: 1 1 auto;
+  background: linear-gradient(90deg, var(--pink), var(--purple) 50%, var(--cyan));
+  background-size: 200% 100%;
+  animation: shimmer 6s ease-in-out infinite alternate;
 }
 
-#list-title {
-  margin-bottom: 12px;
+#save-button:hover {
+  filter: saturate(1.3) brightness(1.05);
+}
+
+button.danger {
+  color: var(--danger);
+}
+
+input:disabled,
+select:disabled,
+button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+}
+
+#message {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: fit-content;
+  max-width: 100%;
+  margin: 0 0 28px;
+  padding: 8px 14px;
+  font-family: "Lucida Console", "Courier New", monospace;
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--success);
+  background-color: var(--window);
+  border: 2px solid var(--ink);
+  box-shadow: 4px 4px 0 var(--mint);
+  overflow-wrap: anywhere;
+}
+
+#message::before {
+  content: "";
+  flex: none;
+  width: 10px;
+  height: 10px;
+  background-color: currentColor;
+}
+
+#message[data-error="true"] {
+  color: var(--danger);
+  box-shadow: 4px 4px 0 var(--hot-pink);
+}
+
+#message:empty {
+  display: none;
+}
+
+#message.pop {
+  animation: pop 0.35s var(--ease);
+}
+
+.list-tools {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.list-tools div {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.list-tools div:first-child {
+  flex-grow: 2;
+}
+
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.filters button {
+  min-height: 40px;
+  padding: 6px 12px;
+  font-size: 0.82rem;
+}
+
+.filters button[aria-pressed="true"] {
+  color: var(--yellow);
+  background-color: var(--ink);
+  border-color: var(--ink) #fff #fff var(--ink);
+  box-shadow: 3px 3px 0 var(--hot-pink);
+}
+
+.list-summary {
+  margin: 0 0 12px;
+  font-family: "Lucida Console", "Courier New", monospace;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.list-summary:empty {
+  display: none;
 }
 
 #empty-state {
   margin: 0;
-  padding: 14px 16px;
-  color: #526174;
-  background-color: #f8fafc;
-  border: 1px dashed #b8c4d3;
-  border-radius: 6px;
+  padding: 22px 16px;
+  font-family: "Lucida Console", "Courier New", monospace;
+  color: var(--muted);
+  text-align: center;
+  background-color: var(--row);
+  border: 2px dashed var(--purple);
 }
 
 #project-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
   margin: 0;
-  padding-left: 24px;
+  padding: 0;
+  list-style: none;
 }
 
 #project-list li {
-  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px 12px 16px;
+  background-color: var(--row);
+  border: 2px solid var(--ink);
+  transition: transform 0.2s var(--ease), box-shadow 0.2s var(--ease), background-color 0.2s ease;
+}
+
+#project-list li:hover {
+  background-color: #fff;
+  box-shadow: 5px 5px 0 var(--cyan);
+  transform: translate(-2px, -2px);
+}
+
+#project-list li.enter {
+  animation: rise 0.45s var(--ease) both;
+  animation-delay: calc(var(--i, 0) * 50ms);
+}
+
+.project-info {
+  display: flex;
+  flex: 1 1 auto;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  min-width: 0;
+}
+
+.project-info strong {
+  font-weight: 700;
   overflow-wrap: anywhere;
+}
+
+.status {
+  flex: none;
+  padding: 1px 8px;
+  font-family: "Lucida Console", "Courier New", monospace;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--planned-text);
+  background-color: var(--planned-bg);
+  border: 2px solid currentColor;
+}
+
+.status[data-status="In Progress"] {
+  color: var(--progress-text);
+  background-color: var(--progress-bg);
+}
+
+.status[data-status="Completed"] {
+  color: var(--completed-text);
+  background-color: var(--completed-bg);
+}
+
+.project-actions {
+  display: flex;
+  flex: none;
+  gap: 10px;
+}
+
+.project-actions button {
+  padding: 8px 14px;
+  font-size: 0.82rem;
 }
 
 [hidden] {
   display: none !important;
 }
 
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+}
+
+@keyframes pop {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.97);
+  }
+}
+
+@keyframes grid {
+  to {
+    background-position: 0 48px;
+  }
+}
+
+@keyframes shimmer {
+  to {
+    background-position: 100% 0;
+  }
+}
+
 @media (max-width: 559px) {
   body {
-    padding: 16px 12px;
+    padding: 24px 12px;
     font-size: 15px;
   }
 
@@ -159,24 +497,44 @@ select:focus-visible {
   }
 
   h1 {
-    font-size: 1.7rem;
+    font-size: 1.9rem;
   }
 
   section {
-    padding: 18px 14px;
-    margin-bottom: 18px;
+    padding: 20px 16px;
+    margin-bottom: 24px;
+    box-shadow: 4px 4px 0 var(--hot-pink), 8px 8px 0 var(--cyan);
   }
 
   h2 {
-    font-size: 1.2rem;
-    margin-bottom: 16px;
+    margin: -20px -16px 18px;
+    font-size: 0.95rem;
   }
 
-  #project-form {
-    gap: 16px;
+  #project-form button {
+    flex: 1 1 100%;
   }
 
-  button {
-    width: 100%;
+  .list-tools {
+    flex-direction: column;
+  }
+
+  #project-list li {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 14px;
+  }
+
+  .project-actions button {
+    flex: 1 1 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
   }
 }

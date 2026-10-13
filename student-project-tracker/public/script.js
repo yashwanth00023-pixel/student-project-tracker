@@ -1,11 +1,3 @@
-// Store projects in memory and in localStorage.
-const STORAGE_KEY = "workshop-projects-v1";
-const projects = [];
-
-// Track the project currently being edited.
-let editingId = null;
-
-// Find the HTML elements.
 const projectForm = document.querySelector("#project-form");
 const nameInput = document.querySelector("#name");
 const statusInput = document.querySelector("#status");
@@ -15,305 +7,307 @@ const saveButton = document.querySelector("#save-button");
 const cancelButton = document.querySelector("#cancel-button");
 const formTitle = document.querySelector("#form-title");
 const message = document.querySelector("#message");
+const searchInput = document.querySelector("#search");
+const sortInput = document.querySelector("#sort");
+const listTools = document.querySelector(".list-tools");
+const filters = document.querySelector("#filters");
+const filterButtons = [...filters.querySelectorAll("button")];
+const listSummary = document.querySelector("#list-summary");
 
-// Show a message without interpreting it as HTML.
-function showMessage(text) {
-  if (message) {
-    message.textContent = text;
-  }
+const statusOrder = ["Planned", "In Progress", "Completed"];
+
+let projects = [];
+let editingId = null;
+let busy = false;
+let renderedIds = new Set();
+let statusFilter = "All";
+
+function showMessage(text, isError = false) {
+  message.textContent = text;
+  message.dataset.error = String(isError);
+
+  // Restart the entrance animation so each new message is noticeable.
+  message.classList.remove("pop");
+  void message.offsetWidth;
+  message.classList.add("pop");
 }
 
-// Generate a unique ID for each new project.
-function createProjectId() {
-  if (globalThis.crypto?.randomUUID) {
-    return globalThis.crypto.randomUUID();
-  }
-
-  return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
-}
-
-// Check that the saved data has the expected structure.
-function isValidProjectArray(data) {
-  if (!Array.isArray(data)) {
-    return false;
-  }
-
-  const ids = new Set();
-
-  return data.every(function (project) {
-    if (
-      project === null ||
-      typeof project !== "object" ||
-      Array.isArray(project) ||
-      typeof project.id !== "string" ||
-      project.id.trim() === "" ||
-      typeof project.name !== "string" ||
-      project.name.trim() === "" ||
-      !["Planned", "In Progress", "Completed"].includes(project.status)
-    ) {
-      return false;
-    }
-
-    if (ids.has(project.id)) {
-      return false;
-    }
-
-    ids.add(project.id);
-    return true;
-  });
-}
-
-// Load saved projects when the page starts.
-function loadProjects() {
-  let storedText;
-
-  try {
-    storedText = localStorage.getItem(STORAGE_KEY);
-  } catch (error) {
-    showMessage(
-      "Saved projects could not be read from this browser. Changes may not be saved."
-    );
-    return;
-  }
-
-  // A missing key means this is a new, empty tracker.
-  if (storedText === null) {
-    return;
-  }
-
-  let storedProjects;
-
-  try {
-    storedProjects = JSON.parse(storedText);
-  } catch (error) {
-    showMessage(
-      "Saved project data is invalid. It has not been overwritten. Check or clear the stored data before continuing."
-    );
-    return;
-  }
-
-  if (!isValidProjectArray(storedProjects)) {
-    showMessage(
-      "Saved project data has an invalid format. It has not been overwritten. Check or clear the stored data before continuing."
-    );
-    return;
-  }
-
-  // Restore the valid records into the existing array.
-  projects.push(...storedProjects);
-}
-
-// Save the current collection.
-function saveProjects() {
-  try {
-    // Convert the projects array into text for storage.
-    const storedText = JSON.stringify(projects);
-
-    localStorage.setItem(STORAGE_KEY, storedText);
-    return true;
-  } catch (error) {
-    showMessage(
-      "Your changes are in this page's memory, but they could not be saved to browser storage."
-    );
-    return false;
-  }
-}
-
-// Return the form to Add mode.
 function resetFormMode() {
   editingId = null;
   projectForm.reset();
-
   saveButton.textContent = "Save Project";
   cancelButton.hidden = true;
-
-  if (formTitle) {
-    formTitle.textContent = "Add a Project";
-  }
+  formTitle.textContent = "Add a Project";
 }
 
-// Display all projects.
+function setBusy(value) {
+  busy = value;
+  projectForm
+    .querySelectorAll("input, select, button")
+    .forEach((element) => {
+      element.disabled = value;
+    });
+  projectList.querySelectorAll("button").forEach((element) => {
+    element.disabled = value;
+  });
+}
+
+function getErrorMessage(error) {
+  if (error instanceof TypeError) {
+    return "Network error. Check that the server is running.";
+  }
+
+  return error instanceof Error ? error.message : "The request failed.";
+}
+
+async function getApiError(response) {
+  try {
+    const body = await response.json();
+    if (typeof body.error === "string" && body.error.trim()) {
+      return body.error;
+    }
+  } catch {
+    // The server response did not contain readable JSON.
+  }
+
+  return `Request failed with status ${response.status}.`;
+}
+
+async function request(url, options = {}) {
+  let response;
+
+  try {
+    response = await fetch(url, options);
+  } catch (error) {
+    throw new Error(getErrorMessage(error));
+  }
+
+  if (!response.ok) {
+    throw new Error(await getApiError(response));
+  }
+
+  return response;
+}
+
+async function loadProjects() {
+  const response = await request("/api/projects");
+  const rows = await response.json();
+
+  if (!Array.isArray(rows)) {
+    throw new Error("The server returned an invalid project list.");
+  }
+
+  projects = rows;
+  renderProjects();
+}
+
+function getVisibleProjects() {
+  const search = searchInput.value.trim().toLowerCase();
+
+  const visible = projects.filter((project) => {
+    const matchesStatus = statusFilter === "All" || project.status === statusFilter;
+    return matchesStatus && project.name.toLowerCase().includes(search);
+  });
+
+  // The API returns newest first, so "newest" keeps that order.
+  if (sortInput.value === "oldest") {
+    visible.sort((a, b) => a.id - b.id);
+  } else if (sortInput.value === "name") {
+    visible.sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" }));
+  } else if (sortInput.value === "status") {
+    visible.sort((a, b) => statusOrder.indexOf(a.status) - statusOrder.indexOf(b.status));
+  }
+
+  return visible;
+}
+
+function renderFilters() {
+  filterButtons.forEach((button) => {
+    const status = button.dataset.filter;
+    const count = status === "All"
+      ? projects.length
+      : projects.filter((project) => project.status === status).length;
+
+    button.textContent = `${status} (${count})`;
+    button.setAttribute("aria-pressed", String(status === statusFilter));
+  });
+}
+
 function renderProjects() {
-  if (!projectList) {
+  const visibleProjects = getVisibleProjects();
+  const hasProjects = projects.length > 0;
+
+  projectList.replaceChildren();
+  renderFilters();
+
+  listTools.hidden = !hasProjects;
+  filters.hidden = !hasProjects;
+  emptyState.hidden = visibleProjects.length > 0;
+  emptyState.textContent = hasProjects
+    ? "No projects match your search or filter."
+    : "No projects yet.";
+  listSummary.textContent = hasProjects && visibleProjects.length !== projects.length
+    ? `Showing ${visibleProjects.length} of ${projects.length} projects.`
+    : "";
+
+  let newItems = 0;
+
+  visibleProjects.forEach((project) => {
+    const listItem = document.createElement("li");
+    const projectInfo = document.createElement("div");
+    const projectActions = document.createElement("div");
+    const projectName = document.createElement("strong");
+    const projectStatus = document.createElement("span");
+    const editButton = document.createElement("button");
+    const deleteButton = document.createElement("button");
+
+    projectInfo.className = "project-info";
+    projectActions.className = "project-actions";
+
+    // Animate only rows that were not on the page before this render.
+    if (!renderedIds.has(project.id)) {
+      listItem.classList.add("enter");
+      listItem.style.setProperty("--i", String(newItems));
+      newItems += 1;
+    }
+
+    projectName.textContent = project.name;
+    projectStatus.textContent = project.status;
+    projectStatus.className = "status";
+    projectStatus.dataset.status = project.status;
+
+    editButton.type = "button";
+    editButton.textContent = "Edit";
+    editButton.addEventListener("click", () => {
+      if (busy) return;
+
+      editingId = project.id;
+      nameInput.value = project.name;
+      statusInput.value = project.status;
+      saveButton.textContent = "Save changes";
+      cancelButton.hidden = false;
+      formTitle.textContent = "Edit a Project";
+      showMessage("Editing project.");
+      nameInput.focus();
+    });
+
+    deleteButton.type = "button";
+    deleteButton.className = "danger";
+    deleteButton.textContent = "Delete";
+    deleteButton.addEventListener("click", async () => {
+      if (busy || !window.confirm(`Are you sure you want to delete ${project.name}?`)) {
+        return;
+      }
+
+      setBusy(true);
+      showMessage("Deleting...");
+
+      try {
+        await request(`/api/projects/${project.id}`, { method: "DELETE" });
+
+        if (editingId === project.id) {
+          resetFormMode();
+        }
+
+        await loadProjects();
+        showMessage("Project deleted.");
+      } catch (error) {
+        showMessage(getErrorMessage(error), true);
+      } finally {
+        setBusy(false);
+      }
+    });
+
+    projectInfo.append(projectName, projectStatus);
+    projectActions.append(editButton, deleteButton);
+    listItem.append(projectInfo, projectActions);
+    projectList.appendChild(listItem);
+  });
+
+  renderedIds = new Set(visibleProjects.map((project) => project.id));
+
+  // Rows are rebuilt on every render, so keep them locked while a request is pending.
+  if (busy) setBusy(true);
+}
+
+searchInput.addEventListener("input", renderProjects);
+sortInput.addEventListener("change", renderProjects);
+
+filterButtons.forEach((button) => {
+  button.addEventListener("click", () => {
+    statusFilter = button.dataset.filter;
+    renderProjects();
+  });
+});
+
+projectForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+
+  if (busy) return;
+
+  const project = {
+    name: nameInput.value.trim(),
+    status: statusInput.value
+  };
+
+  if (!project.name) {
+    showMessage("Please enter a project name.", true);
+    nameInput.focus();
     return;
   }
 
-  projectList.replaceChildren();
+  const isEditing = editingId !== null;
+  const url = isEditing ? `/api/projects/${editingId}` : "/api/projects";
+  const method = isEditing ? "PUT" : "POST";
 
-  if (emptyState) {
-    emptyState.hidden = projects.length > 0;
+  setBusy(true);
+  showMessage("Saving...");
+
+  try {
+    await request(url, {
+      method,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(project)
+    });
+
+    // Clear the search and filter after adding, so the new project is always visible.
+    if (!isEditing) {
+      searchInput.value = "";
+      statusFilter = "All";
+    }
+
+    await loadProjects();
+    resetFormMode();
+    showMessage(isEditing ? "Project updated." : "Project saved.");
+  } catch (error) {
+    showMessage(getErrorMessage(error), true);
+  } finally {
+    setBusy(false);
   }
+});
 
-  projects.forEach(function (project) {
-    const listItem = document.createElement("li");
+cancelButton.addEventListener("click", () => {
+  if (busy) return;
 
-    const projectName = document.createElement("strong");
-    projectName.textContent = project.name;
+  resetFormMode();
+  showMessage("Editing cancelled. No changes were saved.");
+  nameInput.focus();
+});
 
-    const projectStatus = document.createElement("span");
-    projectStatus.textContent = " — " + project.status + " ";
+setBusy(true);
+showMessage("Loading projects...");
 
-    // Edit button.
-    const editButton = document.createElement("button");
-    editButton.type = "button";
-    editButton.textContent = "Edit";
-
-    editButton.addEventListener("click", function () {
-      const selectedProject = projects.find(function (item) {
-        return item.id === project.id;
-      });
-
-      if (!selectedProject) {
-        return;
-      }
-
-      editingId = selectedProject.id;
-      nameInput.value = selectedProject.name;
-      statusInput.value = selectedProject.status;
-
-      saveButton.textContent = "Save changes";
-      cancelButton.hidden = false;
-
-      if (formTitle) {
-        formTitle.textContent = "Edit a Project";
-      }
-
-      showMessage("");
-      nameInput.focus();
-    });
-
-    // Delete button.
-    const deleteButton = document.createElement("button");
-    deleteButton.type = "button";
-    deleteButton.textContent = "Delete";
-
-    deleteButton.addEventListener("click", function () {
-      const selectedProject = projects.find(function (item) {
-        return item.id === project.id;
-      });
-
-      if (!selectedProject) {
-        return;
-      }
-
-      // Ask before deleting the selected project.
-      const confirmed = window.confirm(
-        "Are you sure you want to delete " +
-          selectedProject.name +
-          "?"
-      );
-
-      if (!confirmed) {
-        return;
-      }
-
-      const projectIndex = projects.findIndex(function (item) {
-        return item.id === selectedProject.id;
-      });
-
-      if (projectIndex === -1) {
-        return;
-      }
-
-      const wasBeingEdited = editingId === selectedProject.id;
-
-      projects.splice(projectIndex, 1);
-
-      if (wasBeingEdited) {
-        resetFormMode();
-      }
-
-      renderProjects();
-
-      if (saveProjects()) {
-        showMessage("Project deleted.");
-      }
-    });
-
-    listItem.append(
-      projectName,
-      projectStatus,
-      editButton,
-      deleteButton
-    );
-
-    projectList.appendChild(listItem);
+loadProjects()
+  .then(() => {
+    showMessage(projects.length ? "Projects loaded." : "No projects yet.");
+  })
+  .catch((error) => {
+    projectList.replaceChildren();
+    emptyState.hidden = true;
+    listTools.hidden = true;
+    filters.hidden = true;
+    showMessage(getErrorMessage(error), true);
+  })
+  .finally(() => {
+    setBusy(false);
   });
-}
-
-// Handle form submission with one submit listener.
-if (
-  projectForm &&
-  nameInput &&
-  statusInput &&
-  projectList &&
-  saveButton &&
-  cancelButton
-) {
-  projectForm.addEventListener("submit", function (event) {
-    event.preventDefault();
-
-    const name = nameInput.value.trim();
-    const status = statusInput.value;
-
-    // Validate the name and status.
-    if (!name) {
-      showMessage("Please enter a project name.");
-      nameInput.focus();
-      return;
-    }
-
-    if (!["Planned", "In Progress", "Completed"].includes(status)) {
-      showMessage("Please select a valid project status.");
-      statusInput.focus();
-      return;
-    }
-
-    const wasEditing = editingId !== null;
-
-    if (wasEditing) {
-      // Edit mode: update the existing record.
-      const projectToUpdate = projects.find(function (project) {
-        return project.id === editingId;
-      });
-
-      if (!projectToUpdate) {
-        resetFormMode();
-        renderProjects();
-        showMessage("That project could not be found. Please try again.");
-        return;
-      }
-
-      // Keep the existing ID.
-      projectToUpdate.name = name;
-      projectToUpdate.status = status;
-    } else {
-      // Add mode: create a new record.
-      projects.push({
-        id: createProjectId(),
-        name: name,
-        status: status
-      });
-    }
-
-    renderProjects();
-    resetFormMode();
-
-    if (saveProjects()) {
-      showMessage("Project " + (wasEditing ? "updated." : "saved."));
-    }
-
-    nameInput.focus();
-  });
-
-  // Cancel editing without changing the stored record.
-  cancelButton.addEventListener("click", function () {
-    resetFormMode();
-    showMessage("Editing cancelled. No changes were saved.");
-    nameInput.focus();
-  });
-}
-
-// Restore saved projects before the first render.
-loadProjects();
-renderProjects();

@@ -15,7 +15,16 @@ function createApp(database) {
     res.json(await database.list());
   });
 
-  app.post('/api/projects', async (req, res) => {
+  function readId(req, res) {
+    const id = Number(req.params.id);
+    if (!Number.isSafeInteger(id) || id < 1) {
+      res.status(400).json({ error: 'Invalid project id.' });
+      return null;
+    }
+    return id;
+  }
+
+  function readProject(req, res) {
     const name = typeof req.body?.name === 'string' ? req.body.name.trim() : '';
     const status = req.body?.status;
 
@@ -27,10 +36,43 @@ function createApp(database) {
       res.status(400).json({
         error: 'Use a name of 1-80 characters and a valid status.'
       });
+      return null;
+    }
+
+    return { name, status };
+  }
+
+  app.post('/api/projects', async (req, res) => {
+    const project = readProject(req, res);
+    if (project) res.status(201).json(await database.create(project));
+  });
+
+  app.put('/api/projects/:id', async (req, res) => {
+    const id = readId(req, res);
+    if (id === null) return;
+
+    const project = readProject(req, res);
+    if (!project) return;
+
+    const row = await database.update(id, project);
+    if (!row) {
+      res.status(404).json({ error: 'Project not found.' });
       return;
     }
 
-    res.status(201).json(await database.create({ name, status }));
+    res.json(row);
+  });
+
+  app.delete('/api/projects/:id', async (req, res) => {
+    const id = readId(req, res);
+    if (id === null) return;
+
+    if (!await database.remove(id)) {
+      res.status(404).json({ error: 'Project not found.' });
+      return;
+    }
+
+    res.json({ deleted: true });
   });
 
   return app;
@@ -38,4 +80,9 @@ function createApp(database) {
 
 const app = createApp(db);
 
-app.listen(3000, () => console.log('Open http://localhost:3000'));
+const port = Number(process.env.PORT || 3000);
+
+app.listen(port, (error) => {
+  if (error) throw error;
+  console.log(`Open http://localhost:${port}`);
+});
